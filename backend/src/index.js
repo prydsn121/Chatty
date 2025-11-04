@@ -28,25 +28,29 @@ app.use(
   })
 );
 
-// API Routes (MUST come before static + catch-all)
+// API Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 
-// PRODUCTION: Serve frontend
+// HEALTH CHECK — Respond FAST to Render's HEAD/GET /
+app.head("/", (req, res) => res.status(200).end());  // ← NEW: Instant for HEAD
+app.get("/", (req, res) => res.status(200).end());   // ← NEW: Instant for GET
+
+// PRODUCTION: Serve frontend (AFTER health check)
 if (process.env.NODE_ENV === "production") {
   const frontendPath = path.join(__dirname, "../frontend/dist");
 
   app.use(express.static(frontendPath));
 
-  // Catch-all for SPA — skip /api routes
+  // Catch-all (skip /api + root)
   app.get("*", (req, res, next) => {
-    if (req.path.startsWith("/api/")) return next();
+    if (req.path.startsWith("/api/") || req.path === "/") return next();
     res.sendFile(path.join(frontendPath, "index.html"));
   });
 }
 
-// Start server
-server.listen(PORT, () => {
+// Start server — Listen on ALL interfaces
+server.listen(PORT, "0.0.0.0", () => {  // ← CRITICAL: "0.0.0.0" for Render
   console.log(`Server running on PORT: ${PORT}`);
   connectDB();
 });

@@ -3,7 +3,8 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import path from "path";
-import { fileURLToPath } from "url";   // ← NEW
+import { fileURLToPath } from "url";
+
 import { connectDB } from "./lib/db.js";
 import authRoutes from "./routes/auth.route.js";
 import messageRoutes from "./routes/message.route.js";
@@ -22,23 +23,24 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://chatty.onrender.com"], // ← add your live URL
+    origin: ["http://localhost:5173", "https://chatty.onrender.com"],
     credentials: true,
   })
 );
 
-// API routes
+// API Routes (MUST come before static + catch-all)
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 
-// PRODUCTION: Serve frontend (MUST BE AFTER ALL API ROUTES)
+// PRODUCTION: Serve frontend
 if (process.env.NODE_ENV === "production") {
   const frontendPath = path.join(__dirname, "../frontend/dist");
 
   app.use(express.static(frontendPath));
 
-  // Catch-all → serve index.html
-  app.get("*", (req, res) => {
+  // Catch-all for SPA — skip /api routes
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api/")) return next();
     res.sendFile(path.join(frontendPath, "index.html"));
   });
 }

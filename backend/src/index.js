@@ -12,10 +12,8 @@ import { app, server } from "./lib/socket.js";
 
 dotenv.config();
 
-// Fix __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
 const PORT = process.env.PORT || 5001;
 
 // Middlewares
@@ -23,7 +21,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://chatty.onrender.com"],
+    origin: ["http://localhost:5173", "https://chatty-1-c650.onrender.com"],
     credentials: true,
   })
 );
@@ -32,25 +30,28 @@ app.use(
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
 
-// HEALTH CHECK — Respond FAST to Render's HEAD/GET /
-app.head("/", (req, res) => res.status(200).end());  // ← NEW: Instant for HEAD
-app.get("/", (req, res) => res.status(200).end());   // ← NEW: Instant for GET
-
-// PRODUCTION: Serve frontend (AFTER health check)
+// PRODUCTION: Serve frontend
 if (process.env.NODE_ENV === "production") {
   const frontendPath = path.join(__dirname, "../frontend/dist");
 
+  // Serve static files
   app.use(express.static(frontendPath));
 
-  // Catch-all (skip /api + root)
-  app.get("*", (req, res, next) => {
-    if (req.path.startsWith("/api/") || req.path === "/") return next();
+  // HEALTH CHECK + ROOT
+  app.get("/", (req, res) => {
+    res.sendFile(path.join(frontendPath, "index.html"));
+  });
+
+  // CATCH-ALL for SPA (AFTER API routes)
+  app.get("*", (req, res) => {
+    // Skip API routes
+    if (req.path.startsWith("/api")) return res.status(404).end();
     res.sendFile(path.join(frontendPath, "index.html"));
   });
 }
 
-// Start server — Listen on ALL interfaces
-server.listen(PORT, "0.0.0.0", () => {  // ← CRITICAL: "0.0.0.0" for Render
-  console.log(`Server running on PORT: ${PORT}`);
+// Start server
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on http://0.0.0.0:${PORT}`);
   connectDB();
 });

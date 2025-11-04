@@ -1,4 +1,4 @@
-import { config } from "dotenv";
+/*import { config } from "dotenv";
 import { connectDB } from "../lib/db.js";
 import User from "../models/user.model.js";
 
@@ -112,4 +112,4 @@ const seedDatabase = async () => {
 };
 
 // Call the function
-seedDatabase();
+seedDatabase();*/
